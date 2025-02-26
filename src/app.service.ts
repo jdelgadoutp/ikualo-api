@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  getHome(): {} {
+    return { 
+      Api: "Ikualo API",
+      Version: '0.1',
+      Description: "API REST sistema financiero",  
+    };
   }
 }

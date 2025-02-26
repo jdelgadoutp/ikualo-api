@@ -1,9 +1,10 @@
-import { Controller, Get, Param, HttpStatus, HttpCode, ParseIntPipe, Post, Body, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Param, HttpStatus, HttpCode, ParseIntPipe, Post, Body, Put, Delete, NotFoundException } from '@nestjs/common';
 import { ApiOperation } from '@nestjs/swagger';
 import { MovementsService } from 'src/users/service/movements.service';
 import { CreateMomeventsDto, UpdateMomeventsDto } from '../dtos/movements.dto';
 import { CreateUsersDto } from '../dtos/users.dto';
 import { UsersService } from '../service/users.service';
+import { runInThisContext } from 'vm';
 
 @Controller('movements')
 export class MovementsController {
@@ -27,11 +28,11 @@ export class MovementsController {
   }
 
 
-  @Get(':movementId')
+  @Get(':movementid')
   @ApiOperation({ summary: "Search by id" })
   @HttpCode(HttpStatus.OK)
-  findOne(@Param('movementId') movementId: string) {
-    return this.movementsService.findOne(movementId);
+  findOne(@Param('movementid') movementid: string) {
+    return this.movementsService.findOne(movementid);
 
   }
 
@@ -40,7 +41,8 @@ export class MovementsController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() payload: CreateMomeventsDto) {
     return await this.userService.update(payload.user, { balance: payload.value }, payload.type)
-      ? { code: -1, message: "Saldo insuficiente" } : this.movementsService.create(payload);
+      ? this.movementsService.create(payload)
+      : { code: -1, message: "Saldo insuficiente" };
   }
 
   @Put(':movementId')
@@ -50,10 +52,14 @@ export class MovementsController {
     return this.movementsService.update(movementId, payload);
   }
 
-  @Delete(':movementId')
-  @ApiOperation({ summary: "Delete by id" })
-  @HttpCode(HttpStatus.OK)
-  delete(@Param(':movementId') movementId: string) {
-    return this.movementsService.delete(movementId);
+  @Delete('/delete/:movementid')
+  async delete(@Param('movementid') movementid: string) {
+    const movement = await this.movementsService.findOne(movementid);
+    const userId = !movement?.user ? '' : movement?.user;
+    const type = !movement?.type ? '' : movement?.type;
+    const value = !movement?.value ? 0 : movement?.value;
+    return await this.userService.validDelete(userId.toString(), { balance: value }, type)
+      ? this.movementsService.delete(movementid)
+      : { code: -1, message: "Saldo insuficiente" };
   }
 }

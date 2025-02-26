@@ -44,26 +44,29 @@ export class UsersService {
         return user;
     }
 
-    async update(id: string, changes: UpdateUsersDto, type: string) {
+    async update(id: string, changes: UpdateUsersDto, type: string): Promise<Boolean> {
 
         if (type == "Egreso") {
             const user = await this.userstModel.findById(id).exec();
             const saldo = !user?.balance ? 0 : user?.balance;
             const movi = !changes.balance ? 0 : changes.balance;
             const resultado = (saldo - movi);
+            console.log(resultado)
             if (resultado < 0) {
-                console.log({ message: "no se puede procesar fondos insuficientes!" });
-                return null;
+                return false;
             } else {
                 this.actualizaSaldo(id, { balance: resultado })
+                return true;
             }
         } else if (type == 'Ingreso') {
             const user = await this.userstModel.findById(id).exec();
             const saldo = !user?.balance ? 0 : user?.balance;
             const movi = !changes.balance ? 0 : changes.balance;
             const resultado = (saldo + movi);
-            this.actualizaSaldo(id, { balance: resultado })  
+            this.actualizaSaldo(id, { balance: resultado })
+            return true;
         }
+        return false;
 
 
     }
@@ -78,6 +81,25 @@ export class UsersService {
         }
 
     }
+
+    async validDelete(id: string, changes: UpdateUsersDto, type: string): Promise<Boolean> {
+
+        const user = await this.userstModel.findById(id).exec();
+        const saldo = !user?.balance ? 0 : user?.balance;
+        const movi = !changes.balance ? 0 : changes.balance;
+        const resultado = (saldo - movi);
+        const newsaldo = (saldo + movi)
+        if (type == "Ingreso") {
+            if (resultado >= 0) {
+                this.actualizaSaldo(id, { balance: resultado })
+                return true;
+            } else {
+                return false;
+            };
+        };
+        this.actualizaSaldo(id, { balance: newsaldo });
+        return true;
+    };
 
 
 }

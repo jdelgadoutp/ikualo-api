@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Type } from '@nestjs/common';
+import { ConsoleLogger, Injectable, NotFoundException, Type } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -39,9 +39,14 @@ export class MovementsService {
     }
   }
 
-  async delete(id: string){
-    return await this.movementModel.findByIdAndDelete(id).exec();
+  async delete(id: string): Promise<{}> {
+    const result = await this.movementModel.findByIdAndDelete(id);
+    if (!result) {
+      return { code: 0, message: 'No se encontro movimiento'}; // Retorna si no se encontró el movimiento
+    }
+    return { code: 1, message: 'Movimiento elminado'} // Retorna si se eliminó correctamente
   }
+  
 
   async findByUser(user: string){
     return await this.movementModel.find({user}).populate('user').exec();
